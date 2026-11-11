@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>除目</title>
+<style>
+body { background: #eef0ea; color: #2f3530; font-family: "PingFang SC", "Noto Serif SC", serif; max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; line-height: 1.9; font-size: 17px; }
+h1 { font-weight: normal; font-size: 22px; letter-spacing: 4px; margin: 0 0 24px; }
+.p { margin: 0 0 6px; white-space: pre-wrap; }
+.head { margin-top: 26px; color: #6f7c70; letter-spacing: 2px; }
+.you { color: #6f7c70; margin-top: 14px; }
+.ind { padding-left: 1em; color: #44504a; }
+.choices { margin: 14px 0 0; }
+.choices button { display: block; width: 100%; text-align: left; background: #f8faf5; border: 1px solid #c3cbbd; border-radius: 6px; padding: 10px 14px; margin: 0 0 8px; font: inherit; color: inherit; cursor: pointer; }
+.choices button:hover { background: #e6ebe0; }
+.again { margin-top: 30px; color: #6f7c70; font-size: 15px; }
+.again a { color: #4f6a55; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>除目</h1>
+<div id="out"></div>
+<div id="choices" class="choices"></div>
+<script src="chumu.js"></script>
+<script>
+// 网页只管画：字全从 chumu.js 来，跟 除目.py 一字不差（test/比.js 对过全部 4096 种挑法）
+var S = null;
+var OUT = document.getElementById('out'), CH = document.getElementById('choices');
+function show(lines) {
+  var menu = [];
+  lines.forEach(function (t) {
+    var m = /^(\d)\. (.*)$/.exec(t);
+    if (m) { menu.push([+m[1], m[2]]); return; }
+    var d = document.createElement('div');
+    if (t === '') { d.style.height = '8px'; OUT.appendChild(d); return; }
+    d.className = 'p' + (/^—— .* ——$/.test(t) ? ' head' : /^你：/.test(t) ? ' you' : /^  /.test(t) ? ' ind' : '');
+    d.textContent = t.replace(/^  /, '');
+    OUT.appendChild(d);
+  });
+  buttons(menu);
+}
+function buttons(menu) {
+  CH.innerHTML = '';
+  if (S.end) {
+    var a = document.createElement('div'); a.className = 'again';
+    var l = document.createElement('a'); l.textContent = '再走一回'; l.onclick = begin;
+    a.appendChild(l); CH.appendChild(a); return;
+  }
+  menu.forEach(function (kv) {
+    var b = document.createElement('button'); b.textContent = kv[1];
+    b.onclick = function () {
+      var o = step(S, kv[0]); if (!o) return;
+      show(['', '你：' + kv[1]].concat(o)); b.blur(); window.scrollTo(0, document.body.scrollHeight);
+    };
+    CH.appendChild(b);
+  });
+}
+function begin() { OUT.innerHTML = ''; S = newState(); show(start(S)); window.scrollTo(0, 0); }
+begin();
+</script>
+</body>
+</html>
