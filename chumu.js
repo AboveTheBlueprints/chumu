@@ -27,7 +27,7 @@ function sky(t) {
 }
 function newState() {
   var s = { step: 0, t: 0, road: '前', d: {}, awake: {}, gone: {}, met: [], why: {}, hope: false, hat: false,
-    cross: {}, walk: [], look: null, said: null, fuu: false, end: false, kitchen: false };
+    cross: {}, walkt: [], walk: [], look: null, said: null, fuu: false, end: false, kitchen: false };
   KEYS.forEach(function (k) { s.d[k] = START[k]; s.awake[k] = (k !== '藤五'); s.why[k] = {}; });
   return s;
 }
@@ -157,6 +157,7 @@ function stepRoad(s, c, out) {
   var mode, dt;
   if (c === 5) { s.road = '后'; mode = '走'; dt = 3; }
   else { mode = ['跑', '走', '慢', '站'][c - 1]; dt = DT[mode]; }
+  s.walkt.push(s.t);
   s.walk.push(c === 5 ? '拐进后巷' : mode);
   if (s.road === '后' && s.step === 3)
     out.push({ '跑': '你跑到后门，推开了。', '走': '你走到后门，推开了。', '慢': '你慢慢走到后门，手搁在门上，推开了。', '站': '你在后门外头站了一会儿，听着墙那边。然后推开了门。' }[mode]);
@@ -293,6 +294,18 @@ function stepAsk(s, c, out) {
   s.step = 7;
   return true;
 }
+var CN = ['', '一', '两', '三', '四'];
+function waited(s, t) {
+  var ns = 0, nt = 0;
+  for (var i = 0; i < s.walk.length; i++) {
+    if (s.walk[i] === '慢' && s.walkt[i] < t) ns++;
+    if (s.walk[i] === '站' && s.walkt[i] < t) nt++;
+  }
+  var parts = [];
+  if (ns) parts.push('放慢过' + CN[ns] + '回');
+  if (nt) parts.push('在路边站过' + CN[nt] + '回');
+  return '等得太久' + (parts.length ? '（他走以前，你路上' + parts.join('、') + '）' : '');
+}
 function finish(s, out) {
   while (s.t < 10) { wait(s, 1, 0.6); leaves(s, out, false); }
   var qian = s.said === '说了"某某国的前任"';
@@ -311,11 +324,15 @@ function finish(s, out) {
   GUESTS.forEach(function (k) {
     var t = s.gone[k][0], why = s.gone[k][1];
     var m = s.met.indexOf(k) >= 0 ? '，在大门口跟你走了个对脸' : (t < s.arrive_t ? '，你还没到家' : '');
+    if (why === '等得太久') why = waited(s, t);
     out.push('  ' + NAME[k] + '：' + sky(t) + '走的' + m + '。让他起身的是：' + why + '。');
   });
   var lm = has(s.cross, '老爷') ? s.cross['老爷'] : '等得太久';
+  if (lm === '等得太久') lm = waited(s, 99).replace('他走以前，', '');
   out.push('  老爷：让他知道的是：' + lm + '。');
-  out.push('  夫人：让她知道的是：' + (has(s.cross, '夫人') ? s.cross['夫人'] : '等得太久') + '。');
+  var fm = has(s.cross, '夫人') ? s.cross['夫人'] : '等得太久';
+  if (fm === '等得太久') fm = waited(s, 99).replace('他走以前，', '');
+  out.push('  夫人：让她知道的是：' + fm + '。');
   out.push('');
   if (s.hat) out.push('那顶官帽，是有人跑去取来、给他戴上的。后来是他自己摘的。');
   out.push('老门客没走。他的铺盖卷就搁在廊下。他坐在火盆边，掰着手指头数明年哪几国有缺，数一个，按下一个指头。');
